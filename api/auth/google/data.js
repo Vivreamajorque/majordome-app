@@ -19,10 +19,10 @@ export default async function handler(req,res){
   if(service==='drive')return res.status(200).json({items:(data.files||[]).map(x=>({id:x.id,title:x.name,detail:x.modifiedTime||'',url:x.webViewLink||''}))});
   const items=[];
   for(const msg of (data.messages||[]).slice(0,12)){
-   const detail=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(msg.id)+'?format=metadata&metadataHeaders=Subject&metadataHeaders=From',{headers:{Authorization:'Bearer '+auth.access_token}});
+   const detail=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(msg.id)+'?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date',{headers:{Authorization:'Bearer '+auth.access_token}});
    if(!detail.ok)continue;
    const mail=await detail.json(),headers=mail.payload?.headers||[];
-   items.push({id:msg.id,title:headers.find(h=>h.name==='Subject')?.value||'Sans objet',detail:headers.find(h=>h.name==='From')?.value||''});
+   items.push({id:msg.id,title:headers.find(h=>h.name==='Subject')?.value||'Sans objet',detail:headers.find(h=>h.name==='From')?.value||'',date:headers.find(h=>h.name==='Date')?.value||'',snippet:mail.snippet||''});
   }
   return res.status(200).json({items});
  }catch{return res.status(502).json({error:'google_api'})}
