@@ -26,17 +26,22 @@ export default async function handler(req,res){
       google('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=40',auth.access_token),
       google('https://www.googleapis.com/drive/v3/files?pageSize=8&orderBy=modifiedTime%20desc&fields=files(id,name,mimeType,modifiedTime,webViewLink)',auth.access_token)
     ]);
+    // Fetch message metadata in bounded parallel batches instead of 40 sequential requests.
+    const ids=(glist.messages||[]).slice(0,40);
     const mails=[];
-    for(const msg of (glist.messages||[]).slice(0,40)){
-      const m=await google('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(msg.id)+'?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date',auth.access_token);
-      const h=m.payload?.headers||[];
-      mails.push(mailClass({
-        id:msg.id,
-        title:h.find(x=>x.name==='Subject')?.value||'Sans objet',
-        from:h.find(x=>x.name==='From')?.value||'',
-        date:h.find(x=>x.name==='Date')?.value||'',
-        snippet:m.snippet||''
+    for(let i=0;i<ids.length;i+=8){
+      const batch=await Promise.allSettled(ids.slice(i,i+8).map(async msg=>{
+        const m=await google('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(msg.id)+'?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date',auth.access_token);
+        const h=m.payload?.headers||[];
+        return mailClass({
+          id:msg.id,
+          title:h.find(x=>x.name==='Subject')?.value||'Sans objet',
+          from:h.find(x=>x.name==='From')?.value||'',
+          date:h.find(x=>x.name==='Date')?.value||'',
+          snippet:m.snippet||''
+        });
       }));
+      for(const result of batch)if(result.status==='fulfilled')mails.push(result.value);
     }
     mails.sort((a,b)=>b.score-a.score);
     const counts={
