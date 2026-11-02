@@ -329,6 +329,39 @@ main{max-width:1680px;width:100%;margin:0 auto}
 @media(max-width:850px){.layout{grid-template-columns:1fr!important}.layout aside{position:relative!important;height:auto!important;overflow:visible!important;padding:13px 18px!important;gap:12px!important}.brand{text-align:left!important;padding:4px 0!important;font-size:21px!important}.brand small{display:inline!important;margin-left:12px!important}.nav{display:flex!important;overflow-x:auto!important;gap:6px!important}.nav button{flex:none!important;white-space:nowrap!important}.nav-secondary{display:none!important}main{padding:20px 18px 40px!important}}
 @media(max-width:650px){.majordome-stats{grid-template-columns:1fr!important}.majordome-card,.majordome-card.mail{min-height:0!important}.dashboard-workspace{gap:12px}.dashboard-workspace .day-agenda{padding:16px!important}.dashboard-workspace .day-agenda-heading{flex-wrap:wrap}.top #today{font-size:10px!important}.prepared-strip{display:flex!important;flex-direction:column!important;gap:7px!important}.brand small{display:none!important}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.nav button,.majordome-card,.capture-actions button{transition:none}}
+
+/* Palette signature ALFRED : bleu-vert d'eau + terracotta */
+:root{--alfred-green:#356e70;--alfred-ink:#27484b;--alfred-border:#dbe7e4;--alfred-surface:#fff;--alfred-terracotta:#b96f56}
+body{background:#f5f8f7!important;color:#294a4c!important}
+main{background:#f5f8f7!important}
+aside{background:#f9fbfa!important;border-right-color:#dbe7e4!important}
+.brand{color:#356e70!important}
+.nav button.active{background:#dcecea!important;color:#285e62!important;border-left:3px solid #b96f56!important}
+.nav button:hover,.nav-secondary button:hover{background:#e7f1ef!important;color:#356e70!important}
+.top .chip:first-child,.majordome-hero .eyebrow,.day-agenda .eyebrow{color:#9d6857!important}
+.top #today{border-color:#dbe7e4!important;color:#527578!important}
+.majordome-hero{border-bottom-color:#dbe7e4!important}
+.majordome-hero h2{color:#285b60!important}
+.majordome-hero .hero-italic{color:#6c8382!important}
+.majordome-card,.majordome-card.mail,.dashboard-workspace .decision-panel,.dashboard-workspace .day-agenda,.quick-capture{border-color:#dbe7e4!important;background:#fff!important}
+.majordome-icon{background:#e1efed!important;color:#3d7779!important}
+.majordome-card strong{color:#285e62!important}
+.majordome-card b{color:#59797b!important}
+.majordome-card:hover{border-color:#a8cfc9!important}
+.decision-title h3,.day-agenda h3,.quick-capture h2{color:#285b60!important}
+.decision-number{background:#f4e3db!important;color:#a65e46!important}
+.decision-label{background:#e3f0ee!important;color:#477579!important}
+.agenda-track{background:#fbfdfc!important;border-left-color:#c9dcda!important}
+.agenda-gridline{border-top-color:#e2ecea!important}
+.agenda-event{background:#dceeed!important;border-left-color:#4c9193!important}
+.agenda-event strong{color:#2c7478!important}
+.agenda-now{border-top-color:#c37b5d!important}
+.agenda-now span{color:#a85f45!important;background:#fff3ed!important}
+.agenda-refresh,.day-agenda-footer button{border-color:#d0e2df!important;color:#376f72!important}
+.prepared-strip{background:#e4f0ed!important;border-color:#cfe3de!important}
+.prepared-strip strong{color:#376d6d!important}
+.quick-capture .capture-actions button:hover{background:#e9f4f2!important;border-color:#a9d0cb!important}
+.compose button,.primary{background:#356e70!important;color:white!important}
 </style></head><body data-theme="serenite"><div class="layout"><aside><div class="brand">ALFRED.<small>Votre temps, organisé</small></div><nav class="nav" aria-label="Navigation principale"><button class="active" data-section="accueil">⌂ &nbsp; Accueil</button><button data-section="missions">◇ &nbsp; Mes missions</button><button data-section="organisee">▦ &nbsp; Ma vie organisée</button><button data-section="espaces">◫ &nbsp; Mes espaces</button><button data-section="parler">◌ &nbsp; Parler à ALFRED</button></nav><div class="nav-secondary"><button data-section="parametres">⚙ &nbsp; Paramètres</button></div><div class="bottom muted">Prototype privé · données locales</div></aside><main><div class="top"><span class="chip">TABLEAU DE BORD</span><span class="chip" id="today"></span></div><section class="smart-home" id="smart-home" aria-label="Brief ALFRED">
   <div class="majordome-hero">
  <div class="hero-copy"><span class="eyebrow">VOTRE BRIEF QUOTIDIEN</span><h2>Bonjour.</h2><p class="hero-italic">Votre journée, déjà organisée.</p><p id="smart-summary">ALFRED prépare votre journée.</p></div>
