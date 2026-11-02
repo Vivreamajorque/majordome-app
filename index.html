@@ -515,9 +515,10 @@ async function loadSmartHome(){
   if(!response.ok)throw new Error(response.status===401?'auth':'network');
   const brief=await response.json();
   showBriefSummary(brief,false);showBriefDetails(brief);
+  if(brief.serviceStatus){const st=brief.serviceStatus;if(!st.gmail){['mail-total','mail-urgent','mail-important','mail-later','mail-auto'].forEach(id=>$(id).textContent='—')}if(!st.calendar){$('agenda-total').textContent='—';$('agenda-highlight').textContent='Agenda temporairement indisponible.'}if(!st.drive){$('docs-total').textContent='—';$('docs-highlight').textContent='Drive temporairement indisponible.'}if(!st.gmail||!st.calendar||!st.drive)$('smart-summary').textContent='Certaines données Google sont indisponibles. Les autres informations restent accessibles.'}
   // Only aggregate counts are cached, never mail subjects, senders, documents or agenda titles.
   const summary={mailCounts:brief.mailCounts,agendaCount:(brief.todayEvents||[]).length,docsCount:(brief.documents||[]).length,prepared:brief.prepared};
-  try{sessionStorage.setItem(briefCacheKey,JSON.stringify({date:new Date().toLocaleDateString('en-CA'),savedAt:Date.now(),summary}))}catch{}
+  if(!brief.serviceStatus||Object.values(brief.serviceStatus).every(Boolean))try{sessionStorage.setItem(briefCacheKey,JSON.stringify({date:new Date().toLocaleDateString('en-CA'),savedAt:Date.now(),summary}))}catch{}
  }catch(e){
   if(e.message==='auth'){
    try{sessionStorage.removeItem(briefCacheKey)}catch{}
