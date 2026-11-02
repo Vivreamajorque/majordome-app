@@ -344,8 +344,10 @@ function renderDayAgenda(events){
  board.append(times,track);
  $('agenda-day-summary').textContent=timed.length+' rendez-vous aujourd’hui · '+(timed.length===1?'Une journée bien organisée.':'Votre programme est prêt.');
 }
+let briefLoading=false;
 async function loadSmartHome(){
- if(!$('smart-home')||$('smart-home').hidden)return;
+ if(!$('smart-home')||$('smart-home').hidden||briefLoading)return;
+ briefLoading=true;
  const missions=read().filter(m=>!m.done);
  const priority=$('smart-priorities');
  priority.replaceChildren(el('div','smart-empty','ALFRED prépare votre journée…'));
@@ -429,9 +431,9 @@ async function renderCaptures(){
  const root=$('capture-items');root.replaceChildren();
  try{
   const captures=await allCaptures(),missions=read();
-  $('brief-captures').textContent=String(captures.length);
+  if($('brief-captures'))$('brief-captures').textContent=String(captures.length);
   const notes=captures.filter(i=>i.type==='note').length,photos=captures.filter(i=>i.type==='photo').length;
-  $('brief-captures-detail').textContent=notes+' note'+(notes>1?'s':'')+' · '+photos+' photo'+(photos>1?'s':'');
+  if($('brief-captures-detail'))$('brief-captures-detail').textContent=notes+' note'+(notes>1?'s':'')+' · '+photos+' photo'+(photos>1?'s':'');
   const all=[...captures.map(item=>({...item,kind:item.type})),...missions.map((item,index)=>({...item,kind:'mission',missionIndex:index}))].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
   const query=$('carnet-search').value.trim().toLocaleLowerCase('fr');
   const filtered=all.filter(item=>(carnetFilter==='tout'||item.kind===carnetFilter)&&(!query||String(item.text||item.name||'').toLocaleLowerCase('fr').includes(query)));
