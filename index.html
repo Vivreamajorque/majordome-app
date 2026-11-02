@@ -385,52 +385,79 @@ function renderDayAgenda(events){
  $('agenda-day-summary').textContent=timed.length+' rendez-vous aujourd’hui · '+(timed.length===1?'Une journée bien organisée.':'Votre programme est prêt.');
 }
 let briefLoading=false;
+const briefCacheKey='alfred-brief-summary-v2';
+function showBriefSummary(brief,stale){
+ const c=brief.mailCounts||{},prepared=brief.prepared||{};
+ $('mail-total').textContent=c.total??0;
+ $('mail-urgent').textContent=c.urgent??0;
+ $('mail-important').textContent=c.important??0;
+ $('mail-later').textContent=c.read??0;
+ $('mail-auto').textContent=c.automatic??0;
+ $('agenda-total').textContent=brief.agendaCount??(brief.todayEvents||[]).length;
+ $('docs-total').textContent=brief.docsCount??(brief.documents||[]).length;
+ $('prepared-summary').textContent=(prepared.mailsClassified||0)+' mails pré-triés · '+(prepared.repliesToPrepare||0)+' à surveiller · '+(prepared.documentsReady||0)+' documents récents';
+ const total=(c.urgent||0)+(c.important||0);
+ $('smart-summary').textContent=(stale?'Dernier brief enregistré · actualisation en cours…':total?total+' mails signalés comme importants ou urgents. Votre brief est à jour.':'Votre brief est à jour. Rien d’urgent détecté parmi les mails analysés.');
+}
+function showBriefDetails(brief){
+ const priority=$('smart-priorities'),missions=read().filter(m=>!m.done);
+ renderDayAgenda(brief.todayEvents||[]);
+ const firstEvent=(brief.todayEvents||[])[0],firstDoc=(brief.documents||[])[0];
+ $('agenda-highlight').textContent=firstEvent?'Prochain : '+firstEvent.title:'Aucun rendez-vous aujourd’hui.';
+ $('docs-highlight').textContent=firstDoc?'Récent : '+firstDoc.title:'Aucun document récent à signaler.';
+ const decisions=[];
+ missions.slice(0,2).forEach(m=>decisions.push({title:m.text,detail:'Mission en attente',label:'À faire'}));
+ (brief.attention||[]).forEach(x=>{if(decisions.length<3)decisions.push(x)});
+ priority.replaceChildren();
+ if(!decisions.length)priority.append(el('div','smart-empty','Rien ne demande votre attention immédiate.'));
+ decisions.slice(0,3).forEach((item,i)=>{
+  const row=el('div','decision-row');row.append(el('span','decision-number',String(i+1)));
+  const copy=el('div','decision-copy');copy.append(el('b','',item.title||'À vérifier'),el('small','',item.detail||item.label||''));
+  row.append(copy,el('span','decision-label',item.label||'À voir'));priority.append(row);
+ });
+}
 async function loadSmartHome(){
  if(!$('smart-home')||$('smart-home').hidden||briefLoading)return;
  briefLoading=true;
- const missions=read().filter(m=>!m.done);
  const priority=$('smart-priorities');
- priority.replaceChildren(el('div','smart-empty','ALFRED prépare votre journée…'));
+ let cached=false;
+ try{
+  const raw=sessionStorage.getItem(briefCacheKey);
+  if(raw){
+   const snapshot=JSON.parse(raw);
+   if(snapshot.date===new Date().toLocaleDateString('en-CA')&&Date.now()-snapshot.savedAt<86400000){
+    showBriefSummary(snapshot.summary,true);cached=true;
+    priority.replaceChildren(el('div','smart-empty','Vos priorités sont en cours de vérification…'));
+    $('agenda-highlight').textContent='Agenda en cours d’actualisation…';
+    $('docs-highlight').textContent='Documents en cours d’actualisation…';
+   }else sessionStorage.removeItem(briefCacheKey);
+  }
+ }catch{try{sessionStorage.removeItem(briefCacheKey)}catch{}}
+ if(!cached)priority.replaceChildren(el('div','smart-empty','ALFRED prépare votre journée…'));
  try{
   const response=await fetch('/api/alfred/brief',{credentials:'same-origin',cache:'no-store'});
+  if(!response.ok)throw new Error(response.status===401?'auth':'network');
   const brief=await response.json();
-  if(!response.ok)throw new Error(brief.error||'brief');
-  const c=brief.mailCounts||{};
-  $('mail-total').textContent=c.total??0;
-  $('mail-urgent').textContent=c.urgent??0;
-  $('mail-important').textContent=c.important??0;
-  $('mail-later').textContent=c.read??0;
-  $('mail-auto').textContent=c.automatic??0;
-  $('agenda-total').textContent=(brief.todayEvents||[]).length;
-  $('docs-total').textContent=(brief.documents||[]).length;
-  renderDayAgenda(brief.todayEvents||[]);const firstEvent=(brief.todayEvents||[])[0];
-  $('agenda-highlight').textContent=firstEvent?('Prochain : '+firstEvent.title):'Aucun rendez-vous important aujourd’hui.';
-  const firstDoc=(brief.documents||[])[0];
-  $('docs-highlight').textContent=firstDoc?('À retrouver : '+firstDoc.title):'Aucun document récent à signaler.';
-  const decisions=[];
-  missions.slice(0,2).forEach(m=>decisions.push({title:m.text,detail:'Mission en attente',label:'À faire'}));
-  (brief.attention||[]).forEach(x=>{if(decisions.length<3)decisions.push(x)});
-  priority.replaceChildren();
-  if(!decisions.length)priority.append(el('div','smart-empty','Rien ne demande votre attention immédiate.'));
-  decisions.slice(0,3).forEach((item,i)=>{
-    const row=el('div','decision-row');
-    row.append(el('span','decision-number',String(i+1)));
-    const copy=el('div','decision-copy');
-    copy.append(el('b','',item.title||'À vérifier'),el('small','',item.detail||item.label||''));
-    row.append(copy,el('span','decision-label',item.label||'À voir'));
-    priority.append(row)
-  });
-  const prepared=brief.prepared||{};
-  $('prepared-summary').textContent=(prepared.mailsClassified||0)+' mails déjà classés · '+(prepared.repliesToPrepare||0)+' à surveiller · '+(prepared.documentsReady||0)+' documents retrouvés';
-  const totalAttention=(c.urgent||0)+(c.important||0)+missions.length;
-  $('smart-summary').textContent=totalAttention?('Vous n’avez que '+Math.min(totalAttention,3)+' décision'+(Math.min(totalAttention,3)>1?'s':'')+' à regarder maintenant. Le reste est rangé.'):'Rien d’urgent. ALFRED garde le reste sous contrôle.';
+  showBriefSummary(brief,false);showBriefDetails(brief);
+  // Only aggregate counts are cached, never mail subjects, senders, documents or agenda titles.
+  const summary={mailCounts:brief.mailCounts,agendaCount:(brief.todayEvents||[]).length,docsCount:(brief.documents||[]).length,prepared:brief.prepared};
+  try{sessionStorage.setItem(briefCacheKey,JSON.stringify({date:new Date().toLocaleDateString('en-CA'),savedAt:Date.now(),summary}))}catch{}
  }catch(e){
-  priority.replaceChildren(el('div','smart-empty','Reconnectez Google depuis Paramètres pour que je puisse préparer votre brief.'));renderDayAgenda([]);
-  $('smart-summary').textContent='Je ne peux pas encore préparer votre journée sans accès Google actif.';
-  ['mail-total','mail-urgent','mail-important','mail-later','mail-auto','agenda-total','docs-total'].forEach(id=>$(id).textContent='—');
-  $('prepared-summary').textContent='Connexion Google nécessaire.';
+  if(e.message==='auth'){
+   try{sessionStorage.removeItem(briefCacheKey)}catch{}
+   priority.replaceChildren(el('div','smart-empty','Reconnectez Google depuis Paramètres pour préparer votre brief.'));
+   $('smart-summary').textContent='Connexion Google nécessaire.';
+  }else if(cached){
+   $('smart-summary').textContent='Dernier brief enregistré · actualisation indisponible pour le moment.';
+   priority.replaceChildren(el('div','smart-empty','Priorités indisponibles tant que Google ne répond pas.'));
+  }else{
+   priority.replaceChildren(el('div','smart-empty','Brief temporairement indisponible. Réessayez dans un instant.'));
+   $('smart-summary').textContent='Impossible de mettre à jour votre journée pour le moment.';
+  }
+  if(!cached)renderDayAgenda([]);
+ }finally{
+  briefLoading=false;updateLearningStatus();
  }
- updateLearningStatus();
 }
 async function showGoogleData(service,label){
  const box=$('google-view')||$('google-data');if(!box)return;box.hidden=false;
