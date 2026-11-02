@@ -20,7 +20,7 @@ export default async function handler(req,res){
   if(!infoResponse.ok)throw new Error('Invalid identity token');
   const info=await infoResponse.json();
   if(info.aud!==id||!['accounts.google.com','https://accounts.google.com'].includes(info.iss)||info.email_verified!=='true')throw new Error('Invalid identity');
-  const payload=Buffer.from(JSON.stringify({email:info.email,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url');
+  const payload=Buffer.from(JSON.stringify({email:info.email,exp:Math.floor(Date.now()/1000)+Math.min(Number(tokens.expires_in)||3600,3600),access_token:tokens.access_token,scope:tokens.scope||''})).toString('base64url');
   const signature=crypto.createHmac('sha256',secret).update(payload).digest('base64url');
   res.setHeader('Set-Cookie',['alfred_oauth=; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=0','alfred_session='+payload+'.'+signature+'; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=3600']);
   return res.redirect(302,'/?google=connected');
